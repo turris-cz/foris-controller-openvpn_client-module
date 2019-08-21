@@ -1,0 +1,195 @@
+{
+    "definitions": {
+        "client_id": {"type": "string", "pattern": "^[a-zA-Z0-9_.-]{1,50}$"},
+		"client": {
+			"type": "object",
+			"properties": {
+				"id": {"$ref": "#/definitions/client_id"},
+				"enabled": {"type": "boolean"}
+			},
+			"additionalProperties": false,
+			"required": ["id", "enabled"]
+		}
+    },
+    "oneOf": [
+        {
+            "description": "Request to list OpenVPN clients",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["request"]},
+                "action": {"enum": ["list"]}
+            },
+            "additionalProperties": false
+        },
+        {
+            "description": "Response to list OpenVPN clients",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["reply"]},
+                "action": {"enum": ["list"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "clients": {
+                            "type": "array",
+                            "items": {"$ref": "#/definitions/client"}
+                        }
+                    },
+                    "additionalProperties": false,
+                    "required": ["clients"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Request to add OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["request"]},
+                "action": {"enum": ["add"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "config": {"type": "string"},
+                        "id": {"$ref": "#/definitions/client_id"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["config", "id"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Reply to add OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["reply"]},
+                "action": {"enum": ["add"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "result": {"type": "boolean"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["result"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Notification that OpenVPN client was added",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["notification"]},
+                "action": {"enum": ["add"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"$ref": "#/definitions/client_id"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["id"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Request to delete OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["request"]},
+                "action": {"enum": ["del"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"$ref": "#/definitions/client_id"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["id"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Reply to delete OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["reply"]},
+                "action": {"enum": ["del"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "result": {"type": "boolean"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["result"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Notification that OpenVPN client was deleted",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["notification"]},
+                "action": {"enum": ["del"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"$ref": "#/definitions/client_id"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["id"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Request to set OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["request"]},
+                "action": {"enum": ["set"]},
+                "data": {"$ref": "#/definitions/client"}
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Reply to set OpenVPN client",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["reply"]},
+                "action": {"enum": ["set"]},
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "result": {"type": "boolean"}
+                    },
+                    "additionalProperties": false,
+                    "required": ["result"]
+                }
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        },
+        {
+            "description": "Notification that OpenVPN client was set",
+            "properties": {
+                "module": {"enum": ["openvpn_client"]},
+                "kind": {"enum": ["notification"]},
+                "action": {"enum": ["set"]},
+                "data": {"$ref": "#/definitions/client"}
+            },
+            "additionalProperties": false,
+            "required": ["data"]
+        }
+    ]
+}
