@@ -26,6 +26,7 @@ from foris_controller_testtools.fixtures import (
     cmdline_script_root,
     controller_modules,
     extra_module_paths,
+    env_overrides,
     message_bus,
     backend,
 )
