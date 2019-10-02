@@ -31,7 +31,6 @@ from foris_controller_testtools.fixtures import (
     mosquitto_test,
     ubusd_test,
     notify_api,
-    lock_backend,
     UCI_CONFIG_DIR_PATH,
     FILE_ROOT_PATH,
 )
@@ -176,14 +175,9 @@ def test_complext(
 
 @pytest.mark.only_backends(["openwrt"])
 def test_complext_openwrt(
-    uci_configs_init,
-    init_script_result,
-    infrastructure,
-    start_buses,
-    network_restart_command,
-    lock_backend,
+    uci_configs_init, init_script_result, infrastructure, start_buses, network_restart_command
 ):
-    uci = get_uci_module(lock_backend)
+    uci = get_uci_module(infrastructure.name)
 
     assert len(list(infrastructure)) == 0
 
