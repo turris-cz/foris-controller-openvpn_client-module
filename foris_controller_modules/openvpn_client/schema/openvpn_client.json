@@ -1,15 +1,15 @@
 {
     "definitions": {
         "client_id": {"type": "string", "pattern": "^[a-zA-Z0-9_.-]{1,50}$"},
-		"client": {
-			"type": "object",
-			"properties": {
-				"id": {"$ref": "#/definitions/client_id"},
-				"enabled": {"type": "boolean"}
-			},
-			"additionalProperties": false,
-			"required": ["id", "enabled"]
-		}
+        "client": {
+            "type": "object",
+            "properties": {
+                "id": {"$ref": "#/definitions/client_id"},
+                "enabled": {"type": "boolean"}
+            },
+            "additionalProperties": false,
+            "required": ["id", "enabled"]
+        }
     },
     "oneOf": [
         {
