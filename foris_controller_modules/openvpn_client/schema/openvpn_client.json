@@ -5,7 +5,8 @@
             "type": "object",
             "properties": {
                 "id": {"$ref": "#/definitions/client_id"},
-                "enabled": {"type": "boolean"}
+                "enabled": {"type": "boolean"},
+                "running": {"type": "boolean"}
             },
             "additionalProperties": false,
             "required": ["id", "enabled"]

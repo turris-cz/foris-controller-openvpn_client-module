@@ -33,7 +33,8 @@ class MockOpenVpnClientHandler(Handler, BaseMockHandler):
     @logger_wrapper(logger)
     def list(self):
         return [
-            {"id": k, "enabled": v["enabled"]} for k, v in MockOpenVpnClientHandler.clients.items()
+            {"id": k, "enabled": v["enabled"], "running": False}
+            for k, v in MockOpenVpnClientHandler.clients.items()
         ]
 
     @logger_wrapper(logger)

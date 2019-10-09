@@ -17,24 +17,35 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 
+import json
 import logging
 import pathlib
-import random
 import typing
 
 from foris_controller_backends.cmdline import BaseCmdLine
 from foris_controller_backends.files import makedirs, BaseFile
 from foris_controller_backends.maintain import MaintainCommands
 from foris_controller_backends.services import OpenwrtServices
-from foris_controller_backends.uci import (
-    UciBackend,
-    get_option_named,
-    get_sections_by_type,
-    parse_bool,
-    store_bool,
-)
+from foris_controller_backends.uci import UciBackend, get_sections_by_type, parse_bool, store_bool
 
 logger = logging.getLogger(__name__)
+
+
+class OpenVpnUbus(BaseCmdLine):
+    def openvpn_running_instances(self) -> typing.Set[str]:
+        """ returns dict with instance name and bool which indicates whether
+            the instance is running
+        """
+
+        output, _ = self._run_command_and_check_retval(
+            ["/bin/ubus", "call", "service", "list", '{"name": "openvpn"}'], 0
+        )
+
+        services = json.loads(output)
+        if "openvpn" not in services or "instances" not in services["openvpn"]:
+            return {}
+
+        return {k for k, v in services["openvpn"]["instances"].items() if v.get("running")}
 
 
 class OpenVpnClientUci:
@@ -43,8 +54,15 @@ class OpenVpnClientUci:
         with UciBackend() as backend:
             data = backend.read("openvpn")
 
+        running_instances = OpenVpnUbus().openvpn_running_instances()
+        logger.debug("Running openvpn instances %s", running_instances)
+
         return [
-            {"id": e["name"], "enabled": parse_bool(e["data"].get("enabled", "0"))}
+            {
+                "id": e["name"],
+                "enabled": parse_bool(e["data"].get("enabled", "0")),
+                "running": e["name"] in running_instances,
+            }
             for e in get_sections_by_type(data, "openvpn", "openvpn")
             if parse_bool(e["data"].get("_client_foris", "0"))
         ]

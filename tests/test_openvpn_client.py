@@ -19,6 +19,9 @@
 
 import pytest
 import pathlib
+import textwrap
+
+from .conftest import file_root, CMDLINE_SCRIPT_ROOT
 
 from foris_controller_testtools.fixtures import (
     network_restart_command,
@@ -39,9 +42,72 @@ from foris_controller_testtools.utils import (
     sh_was_called,
     network_restart_was_called,
     get_uci_module,
+    FileFaker,
 )
 
 from foris_controller.exceptions import UciRecordNotFound
+
+
+@pytest.fixture(scope="function")
+def ubus_service_list_cmd(request):
+
+    # ubus call service list '{"name": "openvpn"}'
+    content = """\
+#!/bin/sh
+
+cat << EOF
+{
+    "openvpn": {
+        "instances": {
+            "openwrt_first": {
+                "running": true,
+                "pid": 2827,
+                "command": [
+                    "\/usr\/sbin\/openvpn",
+                    "--syslog",
+                    "openvpn(openwrt_first)",
+                    "--status",
+                    "\/var\/run\/openvpn.openwrt_first.status",
+                    "--cd",
+                    "\/var\/etc",
+                    "--config",
+                    "openvpn-openwrt_first.conf"
+                ],
+                "term_timeout": 15,
+                "respawn": {
+                    "threshold": 3600,
+                    "timeout": 5,
+                    "retry": -1
+                }
+            },
+            "openwrt_second": {
+                "running": false,
+                "pid": 2830,
+                "command": [
+                    "\/usr\/sbin\/openvpn",
+                    "--syslog",
+                    "openvpn(openwrt_second)",
+                    "--status",
+                    "\/var\/run\/openvpn.openwrt_second.status",
+                    "--cd",
+                    "\/var\/etc",
+                    "--config",
+                    "openvpn-openwrt_second.conf"
+                ],
+                "term_timeout": 15,
+                "respawn": {
+                    "threshold": 3600,
+                    "timeout": 5,
+                    "retry": -1
+                }
+            }
+        }
+    }
+}
+EOF
+"""
+    with FileFaker(CMDLINE_SCRIPT_ROOT, "/bin/ubus", True, textwrap.dedent(content)) as f:
+        yield f
 
 
 def add(infrastructure, id, config):
@@ -78,7 +144,7 @@ def list(infrastructure):
     )["data"]["clients"]
 
 
-def test_list(infrastructure, start_buses):
+def test_list(infrastructure, start_buses, ubus_service_list_cmd):
     res = infrastructure.process_message(
         {"module": "openvpn_client", "action": "list", "kind": "request"}
     )
@@ -88,7 +154,12 @@ def test_list(infrastructure, start_buses):
 
 
 def test_complext(
-    uci_configs_init, init_script_result, infrastructure, start_buses, network_restart_command
+    uci_configs_init,
+    init_script_result,
+    infrastructure,
+    start_buses,
+    network_restart_command,
+    ubus_service_list_cmd,
 ):
     filters = [("openvpn_client", "add")]
     notifications = infrastructure.get_notifications(filters=filters)
@@ -97,7 +168,7 @@ def test_complext(
     res = add(infrastructure, "first", "1")
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": True} in list(infrastructure)
+    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -111,7 +182,7 @@ def test_complext(
     res = add(infrastructure, "first", "2")
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": True} in list(infrastructure)
+    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
 
     # set
     filters = [("openvpn_client", "set")]
@@ -120,7 +191,7 @@ def test_complext(
     res = set(infrastructure, "first", False)
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": False} in list(infrastructure)
+    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -133,7 +204,7 @@ def test_complext(
     res = set(infrastructure, "first", True)
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": True} in list(infrastructure)
+    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -147,7 +218,7 @@ def test_complext(
     res = set(infrastructure, "second", False)
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": True} in list(infrastructure)
+    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
 
     # del
     filters = [("openvpn_client", "del")]
@@ -175,7 +246,12 @@ def test_complext(
 
 @pytest.mark.only_backends(["openwrt"])
 def test_complext_openwrt(
-    uci_configs_init, init_script_result, infrastructure, start_buses, network_restart_command
+    uci_configs_init,
+    init_script_result,
+    infrastructure,
+    start_buses,
+    network_restart_command,
+    ubus_service_list_cmd,
 ):
     uci = get_uci_module(infrastructure.name)
 
@@ -204,6 +280,10 @@ def test_complext_openwrt(
 
     assert path.exists()
     assert path.read_text() == "config content"
+
+    # test list
+    clients = list(infrastructure)
+    assert clients == [{"id": "openwrt_first", "enabled": True, "running": True}]
 
     res = set(infrastructure, "openwrt_first", False)
     assert res["data"]["result"]

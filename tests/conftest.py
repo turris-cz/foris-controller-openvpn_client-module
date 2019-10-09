@@ -31,6 +31,13 @@ from foris_controller_testtools.fixtures import (
     backend,
 )
 
+CMDLINE_SCRIPT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_root")
+
+
+@pytest.fixture(scope="module")
+def file_root():
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_root")
+
 
 @pytest.fixture(scope="session")
 def uci_config_default_path():
