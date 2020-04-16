@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ setup(
     name="foris-controller-openvpn_client-module",
     version=__version__,
     author="CZ.NIC, z.s.p.o. (http://www.nic.cz/)",
-    author_email="my.email@nic.cz",
+    author_email="packaging@turris.cz",
     packages=[
         "foris_controller_openvpn_client_module",
         "foris_controller_backends",
@@ -47,11 +47,6 @@ setup(
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "foris-controller-testtools", "foris-client", "ubus", "paho-mqtt"],
-    entry_points={
-        "foris_controller_announcer": [
-            "openvpn_client = foris_controller_openvpn_client_module.announcer:make_time_message"
-        ]
-    },
     dependency_links=[
         "git+https://gitlab.labs.nic.cz/turris/foris-controller/foris-controller-testtools.git#egg=foris-controller-testtools",
         "git+https://gitlab.labs.nic.cz/turris/foris-controller/foris-client.git#egg=foris-client",
