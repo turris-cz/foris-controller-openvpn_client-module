@@ -313,3 +313,23 @@ def test_complext_openwrt(
         uci.get_section(data, "openvpn", "openwrt_first")
 
     assert path.exists() is False
+
+
+@pytest.mark.parametrize(
+    "plain, sanitized",
+    [("my-sample-id", "my_sample_id"), ("-" * 50, "_" * 50), ("-", "_")],
+    ids=["dash", "max-dashes", "min-dashes"],
+)
+def test_add(
+    uci_configs_init,
+    init_script_result,
+    infrastructure,
+    start_buses,
+    network_restart_command,
+    ubus_service_list_cmd,
+    plain,
+    sanitized,
+):
+    res = add(infrastructure, plain, "data")
+    assert "errors" not in res
+    assert {"id": sanitized, "enabled": True, "running": False} in list(infrastructure)

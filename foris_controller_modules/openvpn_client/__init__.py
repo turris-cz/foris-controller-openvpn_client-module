@@ -21,6 +21,7 @@ import logging
 
 from foris_controller.module_base import BaseModule
 from foris_controller.handler_base import wrap_required_functions
+from foris_controller_openvpn_client_module.utils import sanitize_id
 
 
 class OpenVpnClientModule(BaseModule):
@@ -30,6 +31,7 @@ class OpenVpnClientModule(BaseModule):
         return {"clients": self.handler.list()}
 
     def action_add(self, data: dict):
+        data["id"] = sanitize_id(data["id"])
         res = self.handler.add(**data)
         if res:
             self.notify("add", {"id": data["id"]})
