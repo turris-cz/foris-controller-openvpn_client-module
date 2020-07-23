@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -88,6 +88,8 @@ class OpenVpnClientUci:
             backend.set_option("openvpn", id, "enabled", store_bool(True))
             backend.set_option("openvpn", id, "_client_foris", store_bool(True))
             backend.set_option("openvpn", id, "config", str(file_path))
+            backend.set_option("openvpn", id, "dev", f"vpn_{id}")
+            backend.add_to_list("firewall", "turris_vpn_client", "device", [ f"vpn_{id}" ])
 
         with OpenwrtServices() as services:
             MaintainCommands().restart_network()
@@ -126,6 +128,7 @@ class OpenVpnClientUci:
                 return False
 
             backend.del_section("openvpn", id)
+            backend.del_from_list("firewall", "turris_vpn_client", "device", [ f"vpn_{id}" ])
 
             file_path = pathlib.Path("/etc/openvpn/foris") / f"{id}.conf"
             BaseFile().delete_file(str(file_path))
