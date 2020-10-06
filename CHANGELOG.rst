@@ -1,3 +1,8 @@
+0.4 (2020-10-06)
+----------------
+
+* Automatically add VPN into new firewall zone
+
 0.3 (2020-07-03)
 ----------------
 
