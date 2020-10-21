@@ -317,8 +317,15 @@ def test_complext_openwrt(
 
 @pytest.mark.parametrize(
     "plain, sanitized",
-    [("my-sample-id", "my_sample_id"), ("-" * 50, "_" * 50), ("-", "_")],
-    ids=["dash", "max-dashes", "min-dashes"],
+    [
+        ("my-sample-id", "my_sample_id"),
+        ("-" * 50, "_" * 50),
+        ("-", "_"),
+        ("my.sample.id", "my_sample_id"),
+        ("." * 50, "_" * 50),
+        (".", "_"),
+    ],
+    ids=["dash", "max-dashes", "min-dashes", "dot", "max-dots", "min-dots"],
 )
 def test_add(
     uci_configs_init,
