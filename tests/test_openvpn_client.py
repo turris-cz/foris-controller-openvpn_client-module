@@ -30,9 +30,6 @@ from foris_controller_testtools.fixtures import (
     only_backends,
     backend,
     infrastructure,
-    start_buses,
-    mosquitto_test,
-    ubusd_test,
     notify_api,
     UCI_CONFIG_DIR_PATH,
     FILE_ROOT_PATH,
@@ -144,7 +141,7 @@ def list(infrastructure):
     )["data"]["clients"]
 
 
-def test_list(infrastructure, start_buses, ubus_service_list_cmd):
+def test_list(infrastructure, ubus_service_list_cmd):
     res = infrastructure.process_message(
         {"module": "openvpn_client", "action": "list", "kind": "request"}
     )
@@ -157,7 +154,6 @@ def test_complext(
     uci_configs_init,
     init_script_result,
     infrastructure,
-    start_buses,
     network_restart_command,
     ubus_service_list_cmd,
 ):
@@ -249,7 +245,6 @@ def test_complext_openwrt(
     uci_configs_init,
     init_script_result,
     infrastructure,
-    start_buses,
     network_restart_command,
     ubus_service_list_cmd,
 ):
@@ -331,7 +326,6 @@ def test_add(
     uci_configs_init,
     init_script_result,
     infrastructure,
-    start_buses,
     network_restart_command,
     ubus_service_list_cmd,
     plain,
