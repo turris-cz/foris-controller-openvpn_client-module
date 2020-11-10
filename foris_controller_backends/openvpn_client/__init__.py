@@ -30,7 +30,8 @@ from foris_controller_backends.uci import UciBackend, get_sections_by_type, pars
 
 logger = logging.getLogger(__name__)
 
-IF_NAME_LEN = 10 #  Interface name has to be less then 14 characters and is always prefixed with 'vpn'
+IF_NAME_LEN = 10  # Interface name has to be less then 14 characters and is always prefixed with 'vpn'
+
 
 class OpenVpnUbus(BaseCmdLine):
     def openvpn_running_instances(self) -> typing.Set[str]:
@@ -90,7 +91,7 @@ class OpenVpnClientUci:
             backend.set_option("openvpn", id, "_client_foris", store_bool(True))
             backend.set_option("openvpn", id, "config", str(file_path))
             backend.set_option("openvpn", id, "dev", f"vpn{id[:IF_NAME_LEN]}")
-            backend.add_to_list("firewall", "turris_vpn_client", "device", [ f"vpn{id[:IF_NAME_LEN]}" ])
+            backend.add_to_list("firewall", "turris_vpn_client", "device", [f"vpn{id[:IF_NAME_LEN]}"])
 
         with OpenwrtServices() as services:
             MaintainCommands().restart_network()
@@ -129,7 +130,7 @@ class OpenVpnClientUci:
                 return False
 
             backend.del_section("openvpn", id)
-            backend.del_from_list("firewall", "turris_vpn_client", "device", [ f"vpn{id[:IF_NAME_LEN]}" ])
+            backend.del_from_list("firewall", "turris_vpn_client", "device", [f"vpn{id[:IF_NAME_LEN]}"])
 
             file_path = pathlib.Path("/etc/openvpn/foris") / f"{id}.conf"
             BaseFile().delete_file(str(file_path))
