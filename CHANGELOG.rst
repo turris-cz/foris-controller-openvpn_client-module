@@ -1,3 +1,10 @@
+0.5 (2020-11-10)
+----------------
+
+* sanitize input characters in client config file name
+* limit interface name length
+* linter fixes and cleanup of deprecated code
+
 0.4 (2020-10-06)
 ----------------
 
