@@ -93,9 +93,7 @@ class OpenVpnClientUci:
             backend.set_option("openvpn", id, "dev", f"vpn{id[:IF_NAME_LEN]}")
             backend.add_to_list("firewall", "turris_vpn_client", "device", [f"vpn{id[:IF_NAME_LEN]}"])
 
-        with OpenwrtServices() as services:
-            MaintainCommands().restart_network()
-            services.restart("openvpn", delay=3)
+        self.restart_openvpn()
 
         return True
 
@@ -135,8 +133,17 @@ class OpenVpnClientUci:
             file_path = pathlib.Path("/etc/openvpn/foris") / f"{id}.conf"
             BaseFile().delete_file(str(file_path))
 
+        self.restart_openvpn()
+
+        return True
+
+    @staticmethod
+    def restart_openvpn():
+        """ Restart or reload network interfaces, openvpn itself and firewall rules.
+            To make sure that as openvpn works as expected after reconfiguration.
+        """
         with OpenwrtServices() as services:
             MaintainCommands().restart_network()
             services.restart("openvpn", delay=3)
-
-        return True
+            # force firewall reload as it doesn't always get triggered by network restart
+            services.reload("firewall", delay=3)
