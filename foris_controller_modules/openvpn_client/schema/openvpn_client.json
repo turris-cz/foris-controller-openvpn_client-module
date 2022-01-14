@@ -1,12 +1,32 @@
 {
     "definitions": {
         "client_id": {"type": "string", "pattern": "^[a-zA-Z0-9_.-]{1,50}$"},
-        "client": {
+        "client_credentials": {
+            "type": "object",
+            "properties": {
+                "username": {"type": "string"},
+                "password": {"type": "string"}
+            },
+            "additionalProperties": false,
+            "required": ["username", "password"]
+        },
+        "client_get": {
             "type": "object",
             "properties": {
                 "id": {"$ref": "#/definitions/client_id"},
                 "enabled": {"type": "boolean"},
-                "running": {"type": "boolean"}
+                "running": {"type": "boolean"},
+                "credentials": {"$ref": "#/definitions/client_credentials"}
+            },
+            "additionalProperties": false,
+            "required": ["id", "enabled"]
+        },
+        "client_set": {
+            "type": "object",
+            "properties": {
+                "id": {"$ref": "#/definitions/client_id"},
+                "enabled": {"type": "boolean"},
+                "credentials": {"$ref": "#/definitions/client_credentials"}
             },
             "additionalProperties": false,
             "required": ["id", "enabled"]
@@ -33,7 +53,7 @@
                     "properties": {
                         "clients": {
                             "type": "array",
-                            "items": {"$ref": "#/definitions/client"}
+                            "items": {"$ref": "#/definitions/client_get"}
                         }
                     },
                     "additionalProperties": false,
@@ -53,7 +73,8 @@
                     "type": "object",
                     "properties": {
                         "config": {"type": "string"},
-                        "id": {"$ref": "#/definitions/client_id"}
+                        "id": {"$ref": "#/definitions/client_id"},
+                        "credentials": {"$ref": "#/definitions/client_credentials"}
                     },
                     "additionalProperties": false,
                     "required": ["config", "id"]
@@ -158,7 +179,7 @@
                 "module": {"enum": ["openvpn_client"]},
                 "kind": {"enum": ["request"]},
                 "action": {"enum": ["set"]},
-                "data": {"$ref": "#/definitions/client"}
+                "data": {"$ref": "#/definitions/client_set"}
             },
             "additionalProperties": false,
             "required": ["data"]
@@ -187,7 +208,7 @@
                 "module": {"enum": ["openvpn_client"]},
                 "kind": {"enum": ["notification"]},
                 "action": {"enum": ["set"]},
-                "data": {"$ref": "#/definitions/client"}
+                "data": {"$ref": "#/definitions/client_get"}
             },
             "additionalProperties": false,
             "required": ["data"]

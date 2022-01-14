@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from foris_controller.utils import logger_wrapper
 from foris_controller_backends.openvpn_client import OpenVpnClientUci
 
 from .. import Handler
+from ..datatypes import OpenVPNClientCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +40,12 @@ class OpenwrtOpenVpnClientHandler(Handler, BaseOpenwrtHandler):
         return OpenwrtOpenVpnClientHandler.uci.list()
 
     @logger_wrapper(logger)
-    def set(self, id: str, enabled: bool) -> bool:
-        return OpenwrtOpenVpnClientHandler.uci.set(id, enabled)
+    def set(self, id: str, enabled: bool, credentials: typing.Optional[OpenVPNClientCredentials] = None) -> bool:
+        return OpenwrtOpenVpnClientHandler.uci.set(id, enabled, credentials)
 
     @logger_wrapper(logger)
-    def add(self, id: str, config: str) -> bool:
-        return OpenwrtOpenVpnClientHandler.uci.add(id, config)
+    def add(self, id: str, config: str, credentials: typing.Optional[OpenVPNClientCredentials] = None) -> bool:
+        return OpenwrtOpenVpnClientHandler.uci.add(id, config, credentials)
 
     @logger_wrapper(logger)
     def delete(self, id: str) -> bool:

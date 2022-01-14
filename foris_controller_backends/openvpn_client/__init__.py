@@ -33,6 +33,10 @@ from foris_controller_backends.uci import (
     store_bool,
 )
 
+from foris_controller_modules.openvpn_client.datatypes import (
+    OpenVPNClientCredentials,
+)
+
 logger = logging.getLogger(__name__)
 
 IF_NAME_LEN = 10  # Interface name has to be less then 14 characters and is always prefixed with 'vpn'
@@ -69,12 +73,16 @@ class OpenVpnClientUci:
                 "id": e["name"],
                 "enabled": parse_bool(e["data"].get("enabled", "0")),
                 "running": e["name"] in running_instances,
+                "credentials": {
+                    "username": e["data"].get("username", ""),
+                    "password": e["data"].get("password", "")
+                }
             }
             for e in get_sections_by_type(data, "openvpn", "openvpn")
             if parse_bool(e["data"].get("_client_foris", "0"))
         ]
 
-    def add(self, id: str, config: str) -> bool:
+    def add(self, id: str, config: str, credentials: typing.Optional[OpenVPNClientCredentials] = None) -> bool:
 
         with UciBackend() as backend:
             data = backend.read("openvpn")
@@ -99,6 +107,8 @@ class OpenVpnClientUci:
             backend.set_option("openvpn", id, "enabled", store_bool(False))
             backend.set_option("openvpn", id, "_client_foris", store_bool(True))
             backend.set_option("openvpn", id, "config", str(file_path))
+            OpenVpnClientUci._set_client_credentials(backend, id, credentials)
+
             backend.set_option("openvpn", id, "dev", f"vpn{id[:IF_NAME_LEN]}")
             backend.add_to_list("firewall", "turris_vpn_client", "device", [f"vpn{id[:IF_NAME_LEN]}"])
 
@@ -106,7 +116,7 @@ class OpenVpnClientUci:
 
         return True
 
-    def set(self, id: str, enabled: bool) -> bool:
+    def set(self, id: str, enabled: bool, credentials: typing.Optional[OpenVPNClientCredentials] = None) -> bool:
 
         with UciBackend() as backend:
             data = backend.read("openvpn")
@@ -120,9 +130,9 @@ class OpenVpnClientUci:
             backend.add_section("openvpn", "openvpn", id)
             backend.set_option("openvpn", id, "enabled", store_bool(enabled))
 
-        with OpenwrtServices() as services:
-            MaintainCommands().restart_network()
-            services.restart("openvpn", delay=3)
+            OpenVpnClientUci._set_client_credentials(backend, id, credentials)
+
+        self.restart_openvpn()
 
         return True
 
@@ -147,6 +157,25 @@ class OpenVpnClientUci:
         return True
 
     @staticmethod
+    def _set_client_credentials(
+        backend: UciBackend,
+        client_id: str,
+        credentials: typing.Optional[OpenVPNClientCredentials] = None
+    ) -> None:
+        """Set OpenVPN client credentials in uci config file.
+
+        Client certificate is not supported yet, just username + password.
+        """
+        if credentials is not None:
+            username = credentials.get("username")
+            password = credentials.get("password")
+            if username is not None and password is not None:
+                # Setting empty strings should delete these options in uci config
+                # Useful for resetting credentials
+                backend.set_option("openvpn", client_id, "username", username)
+                backend.set_option("openvpn", client_id, "password", password)
+
+    @staticmethod
     def restart_openvpn():
         """ Restart or reload network interfaces, openvpn itself and firewall rules.
             To make sure that as openvpn works as expected after reconfiguration.
@@ -154,5 +183,7 @@ class OpenVpnClientUci:
         with OpenwrtServices() as services:
             MaintainCommands().restart_network()
             services.restart("openvpn", delay=3)
+            # reload DNS resolver to try to use VPN native DNS
+            services.reload("resolver", delay=3)
             # force firewall reload as it doesn't always get triggered by network restart
             services.reload("firewall", delay=3)

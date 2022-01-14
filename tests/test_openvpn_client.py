@@ -55,7 +55,7 @@ cat << EOF
     "openvpn": {
         "instances": {
             "openwrt_first": {
-                "running": true,
+                "running": false,
                 "pid": 2827,
                 "command": [
                     "\/usr\/sbin\/openvpn",
@@ -105,24 +105,38 @@ EOF
         yield f
 
 
-def add(infrastructure, id, config):
+def add(infrastructure, id, config, username=None, password=None):
+    msg_data = {"id": id, "config": config}
+    if username is not None and password is not None:
+        msg_data["credentials"] = {
+            "username": username,
+            "password": password
+        }
+
     return infrastructure.process_message(
         {
             "module": "openvpn_client",
             "action": "add",
             "kind": "request",
-            "data": {"id": id, "config": config},
+            "data": msg_data,
         }
     )
 
 
-def set(infrastructure, id, enabled):
+def set(infrastructure, id, enabled, username=None, password=None):
+    msg_data = {"id": id, "enabled": enabled}
+    if username is not None and password is not None:
+        msg_data["credentials"] = {
+            "username": username,
+            "password": password
+        }
+
     return infrastructure.process_message(
         {
             "module": "openvpn_client",
             "action": "set",
             "kind": "request",
-            "data": {"id": id, "enabled": enabled},
+            "data": msg_data,
         }
     )
 
@@ -162,7 +176,12 @@ def test_complex(
     res = add(infrastructure, "first", "1")
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
+    assert {
+        "id": "first",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -172,11 +191,19 @@ def test_complex(
         u"data": {"id": "first"},
     }
 
+    # NOTE: We do not care about running state of the openvpn instances,
+    # therefore it is mocked to always return {"running": false}.
+
     # add existing
     res = add(infrastructure, "first", "2")
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
+    assert {
+        "id": "first",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
     # set
     filters = [("openvpn_client", "set")]
@@ -185,7 +212,12 @@ def test_complex(
     res = set(infrastructure, "first", True)
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
+    assert {
+        "id": "first",
+        "enabled": True,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -198,7 +230,12 @@ def test_complex(
     res = set(infrastructure, "first", False)
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
+    assert {
+        "id": "first",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -212,7 +249,12 @@ def test_complex(
     res = set(infrastructure, "second", False)
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
+    assert {
+        "id": "first",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
     # del
     filters = [("openvpn_client", "del")]
@@ -236,6 +278,72 @@ def test_complex(
     assert "errors" not in res
     assert not res["data"]["result"]
     assert "first" not in {e["id"] for e in list(infrastructure)}
+
+
+def test_complex_with_credentials(
+    uci_configs_init,
+    init_script_result,
+    infrastructure,
+    network_restart_command,
+    ubus_service_list_cmd,
+):
+    filters = [("openvpn_client", "add")]
+    notifications = infrastructure.get_notifications(filters=filters)
+
+    # NOTE: We do not care about running state of the openvpn instances,
+    # therefore it is mocked to always return {"running": false}.
+
+    # add new
+    res = add(infrastructure, "with_creds", "1", "myuser", "p@ssw0rd")
+    assert "errors" not in res
+    assert res["data"]["result"]
+    assert {
+        "id": "with_creds",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "myuser", "password": "p@ssw0rd"}
+    } in list(infrastructure)
+
+    notifications = infrastructure.get_notifications(notifications, filters=filters)
+    assert notifications[-1] == {
+        "module": "openvpn_client",
+        "action": "add",
+        "kind": "notification",
+        "data": {"id": "with_creds"},
+    }
+
+    # update credentials
+    res = set(infrastructure, "with_creds", False, "new_user", "123456")
+    assert "errors" not in res
+    assert res["data"]["result"]
+    assert {
+        "id": "with_creds",
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "new_user", "password": "123456"}
+    } in list(infrastructure)
+
+    # just toggle enabled status and leave credentials be
+    res = set(infrastructure, "with_creds", True)
+    assert "errors" not in res
+    assert res["data"]["result"]
+    assert {
+        "id": "with_creds",
+        "enabled": True,
+        "running": False,
+        "credentials": {"username": "new_user", "password": "123456"}
+    } in list(infrastructure)
+
+    # reset credentials
+    res = set(infrastructure, "with_creds", True, "", "")
+    assert "errors" not in res
+    assert res["data"]["result"]
+    assert {
+        "id": "with_creds",
+        "enabled": True,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
 
 
 @pytest.mark.only_backends(["openwrt"])
@@ -268,6 +376,9 @@ def test_complex_openwrt(
         uci.get_option_named(data, "openvpn", "openwrt_first", "config")
         == "/etc/openvpn/foris/openwrt_first.conf"
     )
+    # username + password should be unset
+    assert uci.get_option_named(data, "openvpn", "openwrt_first", "username", "") == ""
+    assert uci.get_option_named(data, "openvpn", "openwrt_first", "password", "") == ""
 
     path = pathlib.Path(FILE_ROOT_PATH) / "etc/openvpn/foris/openwrt_first.conf"
 
@@ -276,7 +387,14 @@ def test_complex_openwrt(
 
     # test list
     clients = list(infrastructure)
-    assert clients == [{"id": "openwrt_first", "enabled": False, "running": True}]
+    assert clients == [
+        {
+            "id": "openwrt_first",
+            "enabled": False,
+            "running": False,
+            "credentials": {"username": "", "password": ""}
+        }
+    ]
 
     # set
     res = set(infrastructure, "openwrt_first", True)
@@ -322,6 +440,130 @@ def test_complex_openwrt(
     assert path.exists() is False
 
 
+@pytest.mark.only_backends(["openwrt"])
+def test_complex_with_credentials_openwrt(
+    uci_configs_init,
+    init_script_result,
+    infrastructure,
+    network_restart_command,
+    ubus_service_list_cmd,
+):
+    """Test that openvpn credentials are succesfully stored and read back."""
+    uci = get_uci_module(infrastructure.name)
+
+    assert len(list(infrastructure)) == 0
+
+    # add
+    res = add(infrastructure, "openwrt_creds", "config content", "myuser", "p@ssw0rd")
+    assert res["data"]["result"]
+
+    assert network_restart_was_called([])
+    assert sh_was_called(["/etc/init.d/openvpn", "restart"])
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+    assert uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is False
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "_client_foris"))
+        is True
+    )
+    assert (
+        uci.get_option_named(data, "openvpn", "openwrt_creds", "config")
+        == "/etc/openvpn/foris/openwrt_creds.conf"
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username") == "myuser"
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password") == "p@ssw0rd"
+
+    path = pathlib.Path(FILE_ROOT_PATH) / "etc/openvpn/foris/openwrt_creds.conf"
+
+    assert path.exists()
+    assert path.read_text() == "config content"
+
+    # test list
+    clients = list(infrastructure)
+    assert clients == [
+        {
+            "id": "openwrt_creds",
+            "enabled": False,
+            "running": False,
+            "credentials": {"username": "myuser", "password": "p@ssw0rd"}
+        }
+    ]
+
+    # change credentials
+    res = set(infrastructure, "openwrt_creds", False, "new_user", "123456")
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert network_restart_was_called([])
+    assert sh_was_called(["/etc/init.d/openvpn", "restart"])
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is False
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username") == "new_user"
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password") == "123456"
+
+    # try to update just one of a pair username + password - it should not change the previous credentials
+    res = set(infrastructure, "openwrt_creds", False, username="another_new_user")
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is False
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username") == "new_user"
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password") == "123456"
+
+    res = set(infrastructure, "openwrt_creds", False, password="newPassword")
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is False
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username") == "new_user"
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password") == "123456"
+
+    # just toggle enabled
+    res = set(infrastructure, "openwrt_creds", True)
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert network_restart_was_called([])
+    assert sh_was_called(["/etc/init.d/openvpn", "restart"])
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is True
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username") == "new_user"
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password") == "123456"
+
+    # clear credentials
+    res = set(infrastructure, "openwrt_creds", True, "", "")
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert network_restart_was_called([])
+    assert sh_was_called(["/etc/init.d/openvpn", "restart"])
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_creds", "enabled")) is True
+    )
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "username", "") == ""
+    assert uci.get_option_named(data, "openvpn", "openwrt_creds", "password", "") == ""
+
+
 @pytest.mark.parametrize(
     "plain, sanitized",
     [
@@ -343,6 +585,11 @@ def test_add(
     plain,
     sanitized,
 ):
-    res = add(infrastructure, plain, "data")
+    res = add(infrastructure, plain, config="config data...")
     assert "errors" not in res
-    assert {"id": sanitized, "enabled": False, "running": False} in list(infrastructure)
+    assert {
+        "id": sanitized,
+        "enabled": False,
+        "running": False,
+        "credentials": {"username": "", "password": ""}
+    } in list(infrastructure)
