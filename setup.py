@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019-2020 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ setup(
     ],
     setup_requires=[
         "pytest-runner",
-        "flake8",
+        "flake8<4.0",  # setuptools integration with flake8 is deprecated in version >=4.0
     ],
     tests_require=["pytest", "foris-controller-testtools", "foris-client", "ubus", "paho-mqtt"],
     dependency_links=[
