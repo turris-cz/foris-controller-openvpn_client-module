@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019-2020 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,10 +23,15 @@ import pathlib
 import typing
 
 from foris_controller_backends.cmdline import BaseCmdLine
-from foris_controller_backends.files import makedirs, BaseFile
+from foris_controller_backends.files import BaseFile, makedirs
 from foris_controller_backends.maintain import MaintainCommands
 from foris_controller_backends.services import OpenwrtServices
-from foris_controller_backends.uci import UciBackend, get_sections_by_type, parse_bool, store_bool
+from foris_controller_backends.uci import (
+    UciBackend,
+    get_sections_by_type,
+    parse_bool,
+    store_bool,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +92,11 @@ class OpenVpnClientUci:
 
             # update uci
             backend.add_section("openvpn", "openvpn", id)
-            backend.set_option("openvpn", id, "enabled", store_bool(True))
+            # Do not activate vpn config right after adding it
+            # It could mess up already running vpn connections
+            # or make router inaccessible in certain circumstances
+            # It would be safer to activate vpn connection in separate action later
+            backend.set_option("openvpn", id, "enabled", store_bool(False))
             backend.set_option("openvpn", id, "_client_foris", store_bool(True))
             backend.set_option("openvpn", id, "config", str(file_path))
             backend.set_option("openvpn", id, "dev", f"vpn{id[:IF_NAME_LEN]}")

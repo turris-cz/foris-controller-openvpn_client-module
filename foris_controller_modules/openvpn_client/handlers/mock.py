@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ class MockOpenVpnClientHandler(Handler, BaseMockHandler):
         if id in MockOpenVpnClientHandler.clients:
             return False
 
-        MockOpenVpnClientHandler.clients[id] = {"enabled": True, "config": config}
+        MockOpenVpnClientHandler.clients[id] = {"enabled": False, "config": config}
         return True
 
     @logger_wrapper(logger)

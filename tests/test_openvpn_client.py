@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2020, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,32 +17,30 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 #
 
-import pytest
 import pathlib
 import textwrap
 
-from .conftest import file_root, CMDLINE_SCRIPT_ROOT
-
+import pytest
+from foris_controller.exceptions import UciRecordNotFound
 from foris_controller_testtools.fixtures import (
-    network_restart_command,
-    init_script_result,
-    uci_configs_init,
-    only_backends,
+    FILE_ROOT_PATH,
+    UCI_CONFIG_DIR_PATH,
     backend,
     infrastructure,
+    init_script_result,
+    network_restart_command,
     notify_api,
-    UCI_CONFIG_DIR_PATH,
-    FILE_ROOT_PATH,
+    only_backends,
+    uci_configs_init,
 )
-
 from foris_controller_testtools.utils import (
-    sh_was_called,
-    network_restart_was_called,
-    get_uci_module,
     FileFaker,
+    get_uci_module,
+    network_restart_was_called,
+    sh_was_called,
 )
 
-from foris_controller.exceptions import UciRecordNotFound
+from .conftest import CMDLINE_SCRIPT_ROOT, file_root
 
 
 @pytest.fixture(scope="function")
@@ -102,7 +100,7 @@ cat << EOF
     }
 }
 EOF
-"""
+"""  # noqa
     with FileFaker(CMDLINE_SCRIPT_ROOT, "/bin/ubus", True, textwrap.dedent(content)) as f:
         yield f
 
@@ -150,7 +148,7 @@ def test_list(infrastructure, ubus_service_list_cmd):
     assert "clients" in res["data"]
 
 
-def test_complext(
+def test_complex(
     uci_configs_init,
     init_script_result,
     infrastructure,
@@ -164,7 +162,7 @@ def test_complext(
     res = add(infrastructure, "first", "1")
     assert "errors" not in res
     assert res["data"]["result"]
-    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
+    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
@@ -178,24 +176,11 @@ def test_complext(
     res = add(infrastructure, "first", "2")
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
+    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
 
     # set
     filters = [("openvpn_client", "set")]
     notifications = infrastructure.get_notifications(filters=filters)
-
-    res = set(infrastructure, "first", False)
-    assert "errors" not in res
-    assert res["data"]["result"]
-    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
-
-    notifications = infrastructure.get_notifications(notifications, filters=filters)
-    assert notifications[-1] == {
-        u"module": "openvpn_client",
-        u"action": "set",
-        u"kind": "notification",
-        u"data": {"id": "first", "enabled": False},
-    }
 
     res = set(infrastructure, "first", True)
     assert "errors" not in res
@@ -210,11 +195,24 @@ def test_complext(
         u"data": {"id": "first", "enabled": True},
     }
 
+    res = set(infrastructure, "first", False)
+    assert "errors" not in res
+    assert res["data"]["result"]
+    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
+
+    notifications = infrastructure.get_notifications(notifications, filters=filters)
+    assert notifications[-1] == {
+        u"module": "openvpn_client",
+        u"action": "set",
+        u"kind": "notification",
+        u"data": {"id": "first", "enabled": False},
+    }
+
     # set missing
     res = set(infrastructure, "second", False)
     assert "errors" not in res
     assert not res["data"]["result"]
-    assert {"id": "first", "enabled": True, "running": False} in list(infrastructure)
+    assert {"id": "first", "enabled": False, "running": False} in list(infrastructure)
 
     # del
     filters = [("openvpn_client", "del")]
@@ -241,7 +239,7 @@ def test_complext(
 
 
 @pytest.mark.only_backends(["openwrt"])
-def test_complext_openwrt(
+def test_complex_openwrt(
     uci_configs_init,
     init_script_result,
     infrastructure,
@@ -261,7 +259,7 @@ def test_complext_openwrt(
 
     with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
         data = backend.read()
-    assert uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_first", "enabled")) is True
+    assert uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_first", "enabled")) is False
     assert (
         uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_first", "_client_foris"))
         is True
@@ -278,12 +276,26 @@ def test_complext_openwrt(
 
     # test list
     clients = list(infrastructure)
-    assert clients == [{"id": "openwrt_first", "enabled": True, "running": True}]
+    assert clients == [{"id": "openwrt_first", "enabled": False, "running": True}]
 
+    # set
+    res = set(infrastructure, "openwrt_first", True)
+    assert res["data"]["result"]
+
+    with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
+        data = backend.read()
+
+    assert network_restart_was_called([])
+    assert sh_was_called(["/etc/init.d/openvpn", "restart"])
+
+    assert (
+        uci.parse_bool(uci.get_option_named(data, "openvpn", "openwrt_first", "enabled")) is True
+    )
+
+    # set it back
     res = set(infrastructure, "openwrt_first", False)
     assert res["data"]["result"]
 
-    # set
     with uci.UciBackend(UCI_CONFIG_DIR_PATH) as backend:
         data = backend.read()
 
@@ -333,4 +345,4 @@ def test_add(
 ):
     res = add(infrastructure, plain, "data")
     assert "errors" not in res
-    assert {"id": sanitized, "enabled": True, "running": False} in list(infrastructure)
+    assert {"id": sanitized, "enabled": False, "running": False} in list(infrastructure)
