@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Support setting up OpenVPN credentials (username and password)
 
+### Changed
+- Remove Python 2 style syntax from tests
+
 ## [0.6.0] - 2022-01-26
 ### Changed
 - Do not activate VPN client right after adding config

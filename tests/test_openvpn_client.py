@@ -185,10 +185,10 @@ def test_complex(
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
-        u"module": "openvpn_client",
-        u"action": "add",
-        u"kind": "notification",
-        u"data": {"id": "first"},
+        "module": "openvpn_client",
+        "action": "add",
+        "kind": "notification",
+        "data": {"id": "first"},
     }
 
     # NOTE: We do not care about running state of the openvpn instances,
@@ -221,10 +221,10 @@ def test_complex(
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
-        u"module": "openvpn_client",
-        u"action": "set",
-        u"kind": "notification",
-        u"data": {"id": "first", "enabled": True},
+        "module": "openvpn_client",
+        "action": "set",
+        "kind": "notification",
+        "data": {"id": "first", "enabled": True},
     }
 
     res = set(infrastructure, "first", False)
@@ -239,10 +239,10 @@ def test_complex(
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
-        u"module": "openvpn_client",
-        u"action": "set",
-        u"kind": "notification",
-        u"data": {"id": "first", "enabled": False},
+        "module": "openvpn_client",
+        "action": "set",
+        "kind": "notification",
+        "data": {"id": "first", "enabled": False},
     }
 
     # set missing
@@ -267,10 +267,10 @@ def test_complex(
 
     notifications = infrastructure.get_notifications(notifications, filters=filters)
     assert notifications[-1] == {
-        u"module": "openvpn_client",
-        u"action": "del",
-        u"kind": "notification",
-        u"data": {"id": "first"},
+        "module": "openvpn_client",
+        "action": "del",
+        "kind": "notification",
+        "data": {"id": "first"},
     }
 
     # del missing (deleted)
