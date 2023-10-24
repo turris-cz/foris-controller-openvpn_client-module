@@ -1,6 +1,6 @@
 #
 # foris-controller-openvpn_client-module
-# Copyright (C) 2019-2020, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
+# Copyright (C) 2019-2023, 2022 CZ.NIC, z.s.p.o. (http://www.nic.cz/)
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,17 +22,7 @@ import textwrap
 
 import pytest
 from foris_controller.exceptions import UciRecordNotFound
-from foris_controller_testtools.fixtures import (
-    FILE_ROOT_PATH,
-    UCI_CONFIG_DIR_PATH,
-    backend,
-    infrastructure,
-    init_script_result,
-    network_restart_command,
-    notify_api,
-    only_backends,
-    uci_configs_init,
-)
+from foris_controller_testtools.fixtures import FILE_ROOT_PATH, UCI_CONFIG_DIR_PATH
 from foris_controller_testtools.utils import (
     FileFaker,
     get_uci_module,
@@ -40,7 +30,7 @@ from foris_controller_testtools.utils import (
     sh_was_called,
 )
 
-from .conftest import CMDLINE_SCRIPT_ROOT, file_root
+from .conftest import CMDLINE_SCRIPT_ROOT
 
 
 @pytest.fixture(scope="function")
