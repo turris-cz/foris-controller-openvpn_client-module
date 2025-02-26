@@ -5,9 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "foris-controller-openvpn-client-module"
 dynamic = ["version"]
-description = "OpenVpn Client module for Foris Controller"
+description = "OpenVPN Client module for Foris Controller"
 readme = "README.rst"
-license = ""
+license = { "file" = "LICENSE" }
 authors = [
     { name = "CZ.NIC, z.s.p.o. (https://www.nic.cz/)", email = "packaging@turris.cz" },
 ]
