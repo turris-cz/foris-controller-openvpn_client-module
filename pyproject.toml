@@ -33,6 +33,9 @@ ubus = [
 [tool.hatch.version]
 path = "foris_controller_openvpn_client_module/__init__.py"
 
+[project.entry-points.foris_controller_modules]
+openvpn_client = "foris_controller_modules.openvpn_client"
+
 [tool.hatch.build.targets.sdist]
 packages = [
     "foris_controller_backends/",
